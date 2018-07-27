@@ -13,4 +13,5 @@
 //= require rails-ujs
 //= require activestorage
 //= require turbolinks
+//= require cfa_styleguide_main
 //= require_tree .
