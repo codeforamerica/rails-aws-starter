@@ -132,24 +132,24 @@ workflows:
       - run_tests:
           requires:
              - install_dependencies
-#      - deploy-staging:
-#          filters:
-#            branches:
-#              only:
-#                - master
-#          requires:
-#            - run_checks
-#            - run_tests
-#      - approve-for-production:
-#          type: approval
-#          requires:
-#            - deploy-staging
-#      - tag-as-promoted:
-#          requires:
-#            - approve-for-production
-#      - deploy-demo:
-#          requires:
-#            - approve-for-production
-#      - deploy-production:
-#          requires:
-#            - approve-for-production
+      - deploy-staging:
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - run_checks
+            - run_tests
+      - approve-for-production:
+          type: approval
+          requires:
+            - deploy-staging
+      - tag-as-promoted:
+          requires:
+            - approve-for-production
+      - deploy-demo:
+          requires:
+            - approve-for-production
+      - deploy-production:
+          requires:
+            - approve-for-production
