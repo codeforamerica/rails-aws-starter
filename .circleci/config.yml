@@ -1,0 +1,155 @@
+# Ruby CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-ruby/ for more details
+#
+
+working_dir_defaults: &working_dir_defaults
+  working_directory: ~/repo
+
+defaults: &defaults
+  <<: *working_dir_defaults
+  docker:
+    - image: chartsockcfa/hipaa-sample-ci:2
+
+version: 2
+jobs:
+  install_dependencies:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "Gemfile.lock" }}
+          - v1-dependencies-
+      - run: bundle install --jobs=4 --retry=3 --path vendor/bundle
+      - save_cache:
+          paths:
+            - ./vendor/bundle
+          key: v1-dependencies-{{ checksum "Gemfile.lock" }}
+
+  run_checks:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "Gemfile.lock" }}
+          - v1-dependencies-
+      - run: bundle --path vendor/bundle
+      - run: bundle exec bundle-audit update && bundle exec bundle-audit check
+
+  run_tests:
+    <<: *working_dir_defaults
+    docker:
+      - image: chartsockcfa/hipaa-sample-ci:2
+        environment:
+          PGHOST: 127.0.0.1
+          PGUSER: root
+          RAILS_ENV: test
+          RACK_ENV: test
+      - image: circleci/postgres:9.6.2-alpine
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle-test_test
+
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "Gemfile.lock" }}
+          - v1-dependencies-
+      - run: bundle --path vendor/bundle
+      - run: bundle exec rake db:create
+      - run: bundle exec rake db:schema:load
+      - run:
+          name: run tests
+          command: |
+            mkdir /tmp/test-results
+            TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)"
+            bundle exec rspec --format progress \
+                            --format RspecJunitFormatter \
+                            --out /tmp/test-results/rspec.xml \
+                            --format progress \
+                            -- \
+                            $TEST_FILES
+      # collect reports
+      - store_test_results:
+          path: /tmp/test-results
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: test-results
+
+  deploy-staging:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: deploy staging
+          environment:
+            APP_ENV_NAME: REPLACE_ME
+          command: eb deploy ${APP_ENV_NAME}
+
+
+  tag-as-promoted:
+    <<: *defaults
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "REPLACE ME: READ/WRITE DEPLOY KEY FINGERPRINT"
+      - run:
+          name: tag as promoted
+          command: git tag workflow-$CIRCLE_WORKFLOW_ID; git push --tags
+
+  deploy-demo:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: deploy demo
+          environment:
+            APP_ENV_NAME: REPLACE_ME
+          command: eb deploy ${APP_ENV_NAME}
+
+  deploy-production:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: deploy production
+          environment:
+            APP_ENV_NAME: REPLACE_ME
+          command: eb deploy ${APP_ENV_NAME}
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - install_dependencies
+      - run_checks:
+          requires:
+             - install_dependencies
+      - run_tests:
+          requires:
+             - install_dependencies
+#      - deploy-staging:
+#          filters:
+#            branches:
+#              only:
+#                - master
+#          requires:
+#            - run_checks
+#            - run_tests
+#      - approve-for-production:
+#          type: approval
+#          requires:
+#            - deploy-staging
+#      - tag-as-promoted:
+#          requires:
+#            - approve-for-production
+#      - deploy-demo:
+#          requires:
+#            - approve-for-production
+#      - deploy-production:
+#          requires:
+#            - approve-for-production
