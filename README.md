@@ -1,24 +1,22 @@
-# README
+# Rails AWS Starter Application
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+A starter Rails app for Code for America products that includes out-of-the-box configuration for the following:
 
-Things you may want to cover:
+* Postgres as database
+* Rspec for tests
+* [GCF styleguide](https://github.com/codeforamerica/cfa-styleguide-gem)
+* CircleCI config with deployment pipeline (staging, demo, production environments)
 
-* Ruby version
+Currently a work-in-progress.
 
-* System dependencies
+## Usage
 
-* Configuration
+## Development
 
-* Database creation
+## License
 
-* Database initialization
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
-* How to run the test suite
+## Code of Conduct
 
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+Everyone interacting in the Rails AWS Starter project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/codeforamerica/rails-aws-starter/blob/master/CODE_OF_CONDUCT.md).
