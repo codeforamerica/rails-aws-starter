@@ -50,10 +50,13 @@ In order to set up the above functionality, you'll need to configure the followi
             - "REPLACE ME: READ/WRITE DEPLOY KEY FINGERPRINT"
     ```
 
+## Contributing
+Bug reports and pull requests are welcome on GitHub at [https://github.com/codeforamerica/rails-aws-starter](https://github.com/codeforamerica/rails-aws-starter). This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the Contributor Covenant code of conduct.
+
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+The application is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
 ## Code of Conduct
 
