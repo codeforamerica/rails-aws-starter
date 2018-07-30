@@ -1,5 +1,6 @@
-PATH
-  remote: ../cfa-styleguide-gem
+GIT
+  remote: https://github.com/codeforamerica/cfa-styleguide-gem
+  revision: 12a54c8e50a7e7926a75e63cc30eccf2add6141f
   specs:
     cfa-styleguide (0.1.0)
       bourbon
