@@ -26,6 +26,8 @@
 
 # Terraform
 deploy/.terraform/
-deploy/backend-config
 deploy/secrets
-deploy/development
+deploy/backend-configs/*
+deploy/varfiles/*
+!deploy/backend-configs/backend-config.example
+!deploy/varfiles/varfile.example

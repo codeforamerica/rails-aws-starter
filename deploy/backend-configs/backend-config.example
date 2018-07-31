@@ -1,0 +1,3 @@
+# IAM User with read/write permissions for statefile S3 bucket
+access_key =
+secret_key =

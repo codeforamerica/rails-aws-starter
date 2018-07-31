@@ -1,0 +1,5 @@
+# IAM User with admin permissions
+access_key =
+secret_key =
+rds_username =
+rds_password =

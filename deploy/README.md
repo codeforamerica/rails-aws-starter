@@ -1,4 +1,10 @@
-### Setting up terraform backend on S3
+# Using terraform to create hosted environments
+
+This script should be used to create a new hosted environment (e.g. staging, demo, production) for an application.
+
+Terraform is used to automate the initial deployment. To use these instructions, you'll first need to install terraform (available via homebrew as `brew install terraform`).
+
+## To initialize an S3 backend for Terraform state
 
 1. Create a bucket
 
@@ -30,3 +36,13 @@
     ```
     
 1. Create an IAM user and attach the custom policy to it.
+
+1. In `deploy/backend-configs/`, create a file called `sandbox` which contains the Amazon access key id and secret access key for that IAM user. An example template is provided at `backend-config.example`.
+
+    Note: These backends will be environment specific, so name them accordingly.
+
+1. Initialize the local directory by running `terraform init -backend-config=./backend-configs/sandbox`
+
+## Applying changes
+
+1. Run `terraform apply -var-file ./varfiles/sandbox`.
