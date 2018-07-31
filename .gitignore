@@ -23,3 +23,9 @@
 /config/master.key
 
 /.idea
+
+# Terraform
+deploy/.terraform/
+deploy/backend-config
+deploy/secrets
+deploy/development
