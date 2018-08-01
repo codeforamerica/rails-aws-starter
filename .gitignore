@@ -31,3 +31,8 @@ deploy/backend-configs/*
 deploy/varfiles/*
 !deploy/backend-configs/backend-config.example
 !deploy/varfiles/varfile.example
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

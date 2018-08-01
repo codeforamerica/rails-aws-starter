@@ -5,15 +5,22 @@ A starter Rails app for Code for America products that includes out-of-the-box c
 * Postgres as database
 * Rspec for tests
 * [GCF styleguide](https://github.com/codeforamerica/cfa-styleguide-gem)
+* Terraform script for creating deployment environment
 * CircleCI config with deployment pipeline (staging, demo, production environments)
 
 Currently a work-in-progress.
 
 ## Initial Setup
 
-### AWS
+### First deploy
 
-TODO
+1. Install the Elastic Beanstalk CLI (`brew update && brew install awsebcli`) and [configure with your AWS credentials](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3-configuration.html#eb-cli3-credentials).
+
+1. Initialize Elastic Beanstalk `eb init --region <preferred-region>`. This sample app prefers `us-east-1`.
+
+1. Run [terraform](./deploy/README.md) to create the deployment environment (default name is `rails-aws-starter-sandbox`).
+
+1. Deploy the application by running `eb deploy rails-aws-starter-sandbox`.
 
 ### CircleCI
 
