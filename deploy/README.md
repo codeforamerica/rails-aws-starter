@@ -41,8 +41,8 @@ Terraform is used to automate the initial deployment. To use these instructions,
 
     Note: These backends will be environment specific, so name them accordingly.
 
-1. Initialize the local directory by running `terraform init -backend-config=./backend-configs/sandbox`
+1. From the deploy directory, initialize terraform to use the backend by running `terraform init -backend-config=./backend-configs/sandbox`
 
 ## Applying changes
 
-1. Run `terraform apply -var-file ./varfiles/sandbox`.
+1. From the deploy directory, run `terraform apply -var-file ./varfiles/sandbox`.

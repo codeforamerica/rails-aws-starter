@@ -14,11 +14,11 @@ Currently a work-in-progress.
 
 ### First deploy
 
+1. Run [terraform](./deploy/README.md) to create the deployment environment (default name is `rails-aws-starter-sandbox`).
+
 1. Install the Elastic Beanstalk CLI (`brew update && brew install awsebcli`) and [configure with your AWS credentials](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3-configuration.html#eb-cli3-credentials).
 
-1. Initialize Elastic Beanstalk `eb init --region <preferred-region>`. This sample app prefers `us-east-1`.
-
-1. Run [terraform](./deploy/README.md) to create the deployment environment (default name is `rails-aws-starter-sandbox`).
+1. Initialize Elastic Beanstalk `eb init --region <preferred-region>` and choose the environment created above (`rails-aws-starter-sandbox`). For region, this sample app uses `us-east-1`.
 
 1. Deploy the application by running `eb deploy rails-aws-starter-sandbox`.
 
