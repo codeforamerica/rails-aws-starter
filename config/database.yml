@@ -80,6 +80,4 @@ test:
 #
 production:
   <<: *default
-  database: rails-aws-starter_production
-  username: rails-aws-starter
-  password: <%= ENV['RAILS-AWS-STARTER_DATABASE_PASSWORD'] %>
+  url: <%= ENV['DATABASE_URL'] %>

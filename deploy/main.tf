@@ -26,6 +26,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
   application = "${aws_elastic_beanstalk_application.beanstalk_app.name}"
   solution_stack_name = "64bit Amazon Linux 2018.03 v2.8.1 running Ruby 2.5 (Puma)"
 
+  # Minimum size to install gems with native extensions (e.g. Nokogiri)
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "InstanceType"
