@@ -51,6 +51,7 @@ resource "aws_db_instance" "db" {
   instance_class = "db.m3.medium"
   kms_key_id = "${aws_kms_key.k.arn}"
   name = "rails_aws_starter"
+  username = "juliebanana"
   password = "${var.rds_password}"
   storage_encrypted = true
   storage_type = "gp2"
