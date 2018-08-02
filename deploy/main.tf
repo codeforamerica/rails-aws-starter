@@ -136,7 +136,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
 resource "aws_subnet" "rds" {
   vpc_id     = "${aws_vpc.default.id}"
   cidr_block = "10.0.1.0/24"
-  availability_zone = "us-east-1c"
+  availability_zone = "us-east-1e"
 
   tags {
     Name = "RDS"
@@ -168,7 +168,7 @@ resource "aws_db_subnet_group" "rds" {
 resource "aws_db_instance" "db" {
   allocated_storage = 10
   engine = "postgres"
-  availability_zone = "us-east-1c"
+  availability_zone = "us-east-1e"
   instance_class = "db.m3.medium"
   kms_key_id = "${aws_kms_key.k.arn}"
   name = "rails_aws_starter"
