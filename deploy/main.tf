@@ -106,17 +106,17 @@ resource "aws_network_acl" "default" {
 }
 
 # Create a primary private subnet
-resource "aws_subnet" "rds" {
+resource "aws_subnet" "private" {
   vpc_id = "${aws_vpc.default.id}"
   cidr_block = "10.0.1.0/24"
-  availability_zone = "us-east-1e"
+  availability_zone = "us-east-1a"
   tags {
     Name = "private"
   }
 }
 
 # Create a second private subnet for RDS fallback
-resource "aws_subnet" "rds_2" {
+resource "aws_subnet" "private_2" {
   vpc_id = "${aws_vpc.default.id}"
   cidr_block = "10.0.2.0/24"
   availability_zone = "us-east-1b"
@@ -155,14 +155,14 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route_table_association" "private_route_table" {
-  subnet_id = "${aws_subnet.rds.id}"
+  subnet_id = "${aws_subnet.private.id}"
   route_table_id = "${aws_route_table.private.id}"
 }
 
 resource "aws_network_acl" "private" {
   vpc_id = "${aws_vpc.default.id}"
   subnet_ids = [
-    "${aws_subnet.rds.id}"
+    "${aws_subnet.private.id}"
   ]
   egress {
     protocol = "-1"
@@ -276,8 +276,8 @@ resource "aws_elastic_beanstalk_application" "beanstalk_app" {
 resource "aws_db_subnet_group" "rds" {
   name = "rds"
   subnet_ids = [
-    "${aws_subnet.rds.id}",
-    "${aws_subnet.rds_2.id}"
+    "${aws_subnet.private.id}",
+    "${aws_subnet.private_2.id}"
   ]
 
   tags {
@@ -287,7 +287,7 @@ resource "aws_db_subnet_group" "rds" {
 
 resource "aws_db_instance" "db" {
   allocated_storage = 10
-  availability_zone = "us-east-1e"
+  availability_zone = "us-east-1a"
   db_subnet_group_name = "${aws_db_subnet_group.rds.name}"
   engine = "postgres"
   instance_class = "db.m3.medium"
@@ -328,7 +328,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
   setting {
     namespace = "aws:ec2:vpc"
     name = "Subnets"
-    value = "${aws_subnet.rds.id}"
+    value = "${aws_subnet.private.id}"
   }
 
   setting {
