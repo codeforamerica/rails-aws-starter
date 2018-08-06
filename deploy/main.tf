@@ -106,9 +106,9 @@ resource "aws_network_acl" "default" {
 }
 
 # Create a primary private subnet
-resource "aws_subnet" "private" {
+resource "aws_subnet" "rds" {
   vpc_id = "${aws_vpc.default.id}"
-  cidr_block = "10.0.2.0/24"
+  cidr_block = "10.0.1.0/24"
   availability_zone = "us-east-1e"
   tags {
     Name = "private"
@@ -116,9 +116,9 @@ resource "aws_subnet" "private" {
 }
 
 # Create a second private subnet for RDS fallback
-resource "aws_subnet" "private_2" {
+resource "aws_subnet" "rds_2" {
   vpc_id = "${aws_vpc.default.id}"
-  cidr_block = "10.0.3.0/24"
+  cidr_block = "10.0.2.0/24"
   availability_zone = "us-east-1b"
   tags {
     Name = "private 2"
@@ -155,14 +155,14 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route_table_association" "private_route_table" {
-  subnet_id = "${aws_subnet.private.id}"
+  subnet_id = "${aws_subnet.rds.id}"
   route_table_id = "${aws_route_table.private.id}"
 }
 
 resource "aws_network_acl" "private" {
   vpc_id = "${aws_vpc.default.id}"
   subnet_ids = [
-    "${aws_subnet.private.id}"
+    "${aws_subnet.rds.id}"
   ]
   egress {
     protocol = "-1"
@@ -273,11 +273,11 @@ resource "aws_elastic_beanstalk_application" "beanstalk_app" {
   name = "rails-aws-starter"
 }
 
-resource "aws_db_subnet_group" "default" {
-  name = "main"
+resource "aws_db_subnet_group" "rds" {
+  name = "rds"
   subnet_ids = [
-    "${aws_subnet.private.id}",
-    "${aws_subnet.private_2.id}"
+    "${aws_subnet.rds.id}",
+    "${aws_subnet.rds_2.id}"
   ]
 
   tags {
@@ -288,7 +288,7 @@ resource "aws_db_subnet_group" "default" {
 resource "aws_db_instance" "db" {
   allocated_storage = 10
   availability_zone = "us-east-1e"
-  db_subnet_group_name = "${aws_db_subnet_group.default.name}"
+  db_subnet_group_name = "${aws_db_subnet_group.rds.name}"
   engine = "postgres"
   instance_class = "db.m3.medium"
   kms_key_id = "${aws_kms_key.k.arn}"
@@ -328,7 +328,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
   setting {
     namespace = "aws:ec2:vpc"
     name = "Subnets"
-    value = "${aws_subnet.private.id}"
+    value = "${aws_subnet.rds.id}"
   }
 
   setting {
@@ -348,4 +348,5 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
     name = "DATABASE_URL"
     value = "postgresql://${aws_db_instance.db.username}:${var.rds_password}@${aws_db_instance.db.endpoint}/${aws_db_instance.db.name}"
   }
+
 }
