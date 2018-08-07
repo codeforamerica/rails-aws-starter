@@ -15,7 +15,7 @@ variable "rails_secret_key_base" {}
 provider "aws" {
   access_key = "${var.access_key}"
   secret_key = "${var.secret_key}"
-  region = "us-east-1"
+  region = "${var.aws_region}"
 }
 
 # Create a VPC to launch our instances into
@@ -31,7 +31,7 @@ resource "aws_vpc" "default" {
 resource "aws_subnet" "public" {
   vpc_id = "${aws_vpc.default.id}"
   cidr_block = "10.0.0.0/24"
-  availability_zone = "us-east-1e"
+  availability_zone = "${var.aws_az1}"
   tags {
     Name = "public"
   }
@@ -109,7 +109,7 @@ resource "aws_network_acl" "default" {
 resource "aws_subnet" "private" {
   vpc_id = "${aws_vpc.default.id}"
   cidr_block = "10.0.1.0/24"
-  availability_zone = "us-east-1a"
+  availability_zone = "${var.aws_az1}"
   tags {
     Name = "private"
   }
@@ -119,7 +119,7 @@ resource "aws_subnet" "private" {
 resource "aws_subnet" "private_2" {
   vpc_id = "${aws_vpc.default.id}"
   cidr_block = "10.0.2.0/24"
-  availability_zone = "us-east-1b"
+  availability_zone = "${var.aws_az2}"
   tags {
     Name = "private 2"
   }
@@ -287,7 +287,7 @@ resource "aws_db_subnet_group" "rds" {
 
 resource "aws_db_instance" "db" {
   allocated_storage = 10
-  availability_zone = "us-east-1a"
+  availability_zone = "${var.aws_az1}"
   db_subnet_group_name = "${aws_db_subnet_group.rds.name}"
   engine = "postgres"
   instance_class = "db.m3.medium"
