@@ -1,11 +1,12 @@
 GIT
   remote: https://github.com/codeforamerica/cfa-styleguide-gem
-  revision: 12a54c8e50a7e7926a75e63cc30eccf2add6141f
+  revision: baf9a4463c6d0a8ded594b6b045ee06d1dbc266e
   specs:
-    cfa-styleguide (0.1.0)
+    cfa-styleguide (0.2.0)
       bourbon
       jquery-rails
       neat (~> 1.8.0)
+      prism-rails
 
 GEM
   remote: https://rubygems.org/
@@ -105,6 +106,8 @@ GEM
     nokogiri (1.8.4)
       mini_portile2 (~> 2.3.0)
     pg (1.0.0)
+    prism-rails (1.6.0.3)
+      railties (>= 4.2, < 6)
     puma (3.12.0)
     rack (2.0.5)
     rack-test (1.1.0)
