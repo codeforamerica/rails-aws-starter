@@ -14,19 +14,21 @@ Currently a work-in-progress.
 
 ### First deploy
 
+1. Create a new key pair locally (`ssh-keygen -t rsa -b 4096 -C "your_email@example.com"`). Safely store the keyfiles, and run `chmod 400 my-key-pair` on the private key so that only you can read it. Add the generated public key (e.g. `my-key-pair.pub`) to the varfile as `public_key`.
+
 1. Run [terraform](./deploy/README.md) to create the deployment environment (default name is `rails-aws-starter-sandbox`).
+
+1. Upon initial creation, enable access to the Bastion instance for each user that requires SSH access:
+    
+    1. Generate a new key pair (either locally or in AWS console) for each additional user that requires SSH access. Safely store the keyfiles, and run `chmod 400 my-key-pair` on the private key so that only you can read it. Add name and public key information for each user, including the initially generated key, to `adduser.sh`. Commit and push the script before running an `eb deploy` below, as the public keys will be added to the application instances at that time.
+
+    1. Use these private key generated in step one as credentials and run the bastion setup script with: `./bastion_setup.sh <ip address>`, which creates individual user accounts and sets up logging to CloudWatch from the bastion.
 
 1. Install the Elastic Beanstalk CLI (`brew update && brew install awsebcli`) and [configure with your AWS credentials](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3-configuration.html#eb-cli3-credentials).
 
 1. Initialize Elastic Beanstalk `eb init --region <preferred-region>` and choose the environment created above (`rails-aws-starter-sandbox`). For region, this sample app uses `us-east-1`.
 
 1. Deploy the application by running `eb deploy rails-aws-starter-sandbox`.
-
-1. Upon initial creation, enable access to the Bastion instance:
-
-    1. Create a new keypair through the AWS console for SSH access to the bastion. Safely store the keyfile, and run `chmod 400 my-key-pair.pem` so that only you can read it (AWS will throw error without). Generate a publickey for your varfile by running `ssh-keygen -y -f /path/to/private_key.pem` and insert into the relevant terraform varfile as `public_key`.
-    
-    1. Use these credentials and run the bastion setup script with: `./bastion_setup.sh <ip address>`, which creates individual user accounts and sets up logging to CloudWatch from the bastion.
 
 
 ### CircleCI

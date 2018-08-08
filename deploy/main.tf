@@ -322,7 +322,7 @@ resource "aws_instance" "bastion" {
   # communicate with the resource (instance)
   connection {
     # The default username for our AMI
-    user = "ec2_user"
+    user = "ec2-user"
 
     # The connection will use the local SSH agent for authentication.
   }
@@ -334,7 +334,7 @@ resource "aws_instance" "bastion" {
   instance_type = "t2.micro"
   # Amazon Linux AMI 2018.03.a x86_64 ECS HVM GP2 in us-east-1
   ami = "ami-fbc1c684"
-  # Key will be used to SSH to bastion from developer machines
+  # Key will be used to SSH to bastion for setting up user accounts
   key_name = "${aws_key_pair.auth.id}"
   vpc_security_group_ids = [
     "${aws_security_group.bastion_security.id}"
@@ -372,6 +372,30 @@ resource "aws_iam_instance_profile" "bastion_profile" {
 # Beanstalk application
 resource "aws_elastic_beanstalk_application" "beanstalk_app" {
   name = "rails-aws-starter"
+}
+
+resource "aws_iam_role" "instance_role" {
+  name = "instance_role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2008-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_instance_profile" "instance_profile" {
+  name = "instance_profile"
+  role = "${aws_iam_role.instance_role.name}"
 }
 
 resource "aws_db_subnet_group" "rds" {
@@ -412,6 +436,20 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "InstanceType"
     value = "t2.small"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name = "IamInstanceProfile"
+    value = "${aws_iam_instance_profile.instance_profile.name}"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name = "ImageId"
+
+    # Amazon Linux AMI 2018.03.a x86_64 ECS HVM GP2 in us-east-1
+    value = "ami-fbc1c684"
   }
 
   setting {
