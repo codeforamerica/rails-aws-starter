@@ -6,15 +6,10 @@ terraform {
   }
 }
 
-variable "access_key" {}
-variable "secret_key" {}
-variable "rds_password" {}
-variable "rails_secret_key_base" {}
-
 # Specify the provider and access details
 provider "aws" {
-  access_key = "${var.access_key}"
-  secret_key = "${var.secret_key}"
+  access_key = "${var.aws_access_key}"
+  secret_key = "${var.aws_secret_key}"
   region = "${var.aws_region}"
 }
 
