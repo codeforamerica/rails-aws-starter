@@ -65,6 +65,16 @@ resource "aws_network_acl" "default" {
     to_port = 0
   }
 
+  # SSH
+  ingress {
+    protocol = "tcp"
+    rule_no = 100
+    action = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port = 22
+    to_port = 22
+  }
+
   # Ephemeral ports for response packets
   ingress {
     protocol = "tcp"
@@ -168,6 +178,17 @@ resource "aws_network_acl" "private" {
     to_port = 0
   }
 
+  # SSH
+  ingress {
+    protocol = "tcp"
+    rule_no = 100
+    action = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port = 22
+    to_port = 22
+  }
+
+  # Ephemeral ports for response packets
   ingress {
     protocol = "tcp"
     rule_no = 200
@@ -177,6 +198,7 @@ resource "aws_network_acl" "private" {
     to_port = 65535
   }
 
+  # HTTP
   ingress {
     protocol = "tcp"
     rule_no = 300
@@ -185,15 +207,6 @@ resource "aws_network_acl" "private" {
     from_port = 80
     to_port = 80
   }
-//
-//  ingress {
-//    protocol = "tcp"
-//    rule_no = 400
-//    action = "allow"
-//    cidr_block = "0.0.0.0/0"
-//    from_port = 443
-//    to_port = 443
-//  }
 
   tags {
     Name = "private"
@@ -209,9 +222,49 @@ resource "aws_kms_alias" "k" {
   target_key_id = "${aws_kms_key.k.key_id}"
 }
 
+resource "aws_key_pair" "auth" {
+  key_name = "${var.key_name}"
+  public_key = "${var.public_key}"
+}
+
+resource "aws_security_group" "bastion_security" {
+  name = "bastion_security"
+  vpc_id = "${aws_vpc.default.id}"
+
+  # SSH access from select locations
+  ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [
+      "69.12.169.82/32", # CfA
+      "73.106.63.169/32" # Luigi
+    ]
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+  }
+}
+
 resource "aws_security_group" "application_security" {
   name = "application_security"
   vpc_id = "${aws_vpc.default.id}"
+
+  # SSH from the VPC
+  ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [
+      "${aws_vpc.default.cidr_block}"
+    ]
+  }
 
   # HTTP access from the VPC
   ingress {
@@ -264,6 +317,59 @@ resource "aws_security_group" "rds_security" {
   }
 }
 
+resource "aws_instance" "bastion" {
+  # The connection block tells our provisioner how to
+  # communicate with the resource (instance)
+  connection {
+    # The default username for our AMI
+    user = "ec2_user"
+
+    # The connection will use the local SSH agent for authentication.
+  }
+
+  tags {
+    Name = "bastion"
+  }
+
+  instance_type = "t2.micro"
+  # Amazon Linux AMI 2018.03.a x86_64 ECS HVM GP2 in us-east-1
+  ami = "ami-fbc1c684"
+  # Key will be used to SSH to bastion from developer machines
+  key_name = "${aws_key_pair.auth.id}"
+  vpc_security_group_ids = [
+    "${aws_security_group.bastion_security.id}"
+  ]
+  subnet_id = "${aws_subnet.public.id}"
+  associate_public_ip_address = true
+  iam_instance_profile = "${aws_iam_instance_profile.bastion_profile.name}"
+}
+
+resource "aws_iam_role" "bastion_role" {
+  name = "bastion_role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2008-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_instance_profile" "bastion_profile" {
+  name = "bastion_profile"
+  role = "${aws_iam_role.bastion_role.name}"
+}
+
+
+# Beanstalk application
 resource "aws_elastic_beanstalk_application" "beanstalk_app" {
   name = "rails-aws-starter"
 }

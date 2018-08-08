@@ -22,6 +22,13 @@ Currently a work-in-progress.
 
 1. Deploy the application by running `eb deploy rails-aws-starter-sandbox`.
 
+1. Upon initial creation, enable access to the Bastion instance:
+
+    1. Create a new keypair through the AWS console for SSH access to the bastion. Safely store the keyfile, and run `chmod 400 my-key-pair.pem` so that only you can read it (AWS will throw error without). Generate a publickey for your varfile by running `ssh-keygen -y -f /path/to/private_key.pem` and insert into the relevant terraform varfile as `public_key`.
+    
+    1. Use these credentials and run the bastion setup script with: `./bastion_setup.sh <ip address>`, which creates individual user accounts and sets up logging to CloudWatch from the bastion.
+
+
 ### CircleCI
 
 We use CircleCI to run tests and deploy to our various environments, by running the following tasks:

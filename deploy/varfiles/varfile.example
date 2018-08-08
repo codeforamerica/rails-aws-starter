@@ -1,8 +1,7 @@
 # IAM User with admin permissions
 access_key =
 secret_key =
-
 rds_password =
-
-# To generate this run rake secrets
 rails_secret_key_base =
+key_name =
+public_key =
