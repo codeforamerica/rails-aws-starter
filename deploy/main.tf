@@ -113,7 +113,7 @@ resource "aws_network_acl" "default" {
 # Create a primary private subnet
 resource "aws_subnet" "private" {
   vpc_id = "${aws_vpc.default.id}"
-  cidr_block = "10.0.1.0/24"
+  cidr_block = "10.0.2.0/24"
   availability_zone = "${var.aws_az1}"
   tags {
     Name = "private"
@@ -123,7 +123,7 @@ resource "aws_subnet" "private" {
 # Create a second private subnet for RDS fallback
 resource "aws_subnet" "private_2" {
   vpc_id = "${aws_vpc.default.id}"
-  cidr_block = "10.0.2.0/24"
+  cidr_block = "10.0.3.0/24"
   availability_zone = "${var.aws_az2}"
   tags {
     Name = "private 2"
@@ -206,6 +206,16 @@ resource "aws_network_acl" "private" {
     cidr_block = "0.0.0.0/0"
     from_port = 80
     to_port = 80
+  }
+
+  # HTTPS
+  ingress {
+    protocol = "tcp"
+    rule_no = 400
+    action = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port = 443
+    to_port = 443
   }
 
   tags {
@@ -351,6 +361,7 @@ resource "aws_instance" "bastion" {
 
 resource "aws_iam_role" "bastion_role" {
   name = "bastion_role"
+  force_detach_policies = "true"
 
   assume_role_policy = <<EOF
 {
@@ -381,6 +392,7 @@ resource "aws_elastic_beanstalk_application" "beanstalk_app" {
 
 resource "aws_iam_role" "instance_role" {
   name = "instance_role"
+  force_detach_policies = "true"
 
   assume_role_policy = <<EOF
 {
@@ -400,6 +412,7 @@ EOF
 
 resource "aws_iam_role" "beanstalk_role" {
   name = "beanstalk_role"
+  force_detach_policies = "true"
 
   assume_role_policy = <<EOF
 {
@@ -452,6 +465,7 @@ resource "aws_db_instance" "db" {
   storage_encrypted = true
   storage_type = "gp2"
   vpc_security_group_ids = ["${aws_security_group.rds_security.id}"]
+  skip_final_snapshot = "true" # To remove
 }
 
 
@@ -465,12 +479,6 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "InstanceType"
     value = "t2.small"
-  }
-
-  setting {
-    namespace = "aws:autoscaling:launchconfiguration"
-    name = "IamInstanceProfile"
-    value = "${aws_iam_instance_profile.instance_profile.name}"
   }
 
   setting {
