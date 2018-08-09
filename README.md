@@ -30,7 +30,6 @@ Currently a work-in-progress.
 
 1. Deploy the application by running `eb deploy rails-aws-starter-sandbox`.
 
-
 ### CircleCI
 
 We use CircleCI to run tests and deploy to our various environments, by running the following tasks:
@@ -66,9 +65,12 @@ In order to set up the above functionality, you'll need to configure the followi
             - "REPLACE ME: READ/WRITE DEPLOY KEY FINGERPRINT"
     ```
 
+## To SSH to the EC2 instance via the bastion host
+
+Add your credentials to your local SSH agent by running `ssh-add <key>`. SSH to the instance by proxying through the Bastion by running: `ssh -o ProxyCommand='ssh -W %h:%p <username>@<bastion public ip>' <username>@<instance private ip>`
+
 ## Contributing
 Bug reports and pull requests are welcome on GitHub at [https://github.com/codeforamerica/rails-aws-starter](https://github.com/codeforamerica/rails-aws-starter). This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the Contributor Covenant code of conduct.
-
 
 ## License
 

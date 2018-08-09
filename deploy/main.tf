@@ -342,6 +342,11 @@ resource "aws_instance" "bastion" {
   subnet_id = "${aws_subnet.public.id}"
   associate_public_ip_address = true
   iam_instance_profile = "${aws_iam_instance_profile.bastion_profile.name}"
+
+  # Run security updates after creating instance
+  provisioner "remote-exec" {
+    inline = [ "sudo yum -y update --security" ]
+  }
 }
 
 resource "aws_iam_role" "bastion_role" {
@@ -387,6 +392,30 @@ resource "aws_iam_role" "instance_role" {
         "Service": "ec2.amazonaws.com"
       },
       "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role" "beanstalk_role" {
+  name = "beanstalk_role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "elasticbeanstalk.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": {
+          "sts:ExternalId": "elasticbeanstalk"
+        }
+      }
     }
   ]
 }
