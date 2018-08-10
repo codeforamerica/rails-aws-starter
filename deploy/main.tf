@@ -339,11 +339,36 @@ resource "aws_instance" "bastion" {
   ]
   subnet_id = "${aws_subnet.public.id}"
   associate_public_ip_address = true
+  iam_instance_profile = "${aws_iam_instance_profile.bastion_profile.name}"
 }
 
-# Beanstalk application
-resource "aws_elastic_beanstalk_application" "beanstalk_app" {
-  name = "rails-aws-starter"
+resource "aws_iam_role" "bastion_role" {
+  name = "bastion_role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2008-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "bastion_logs_to_cloudwatch" {
+  role = "${aws_iam_role.bastion_role.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
+resource "aws_iam_instance_profile" "bastion_profile" {
+  name = "bastion_profile"
+  role = "${aws_iam_role.bastion_role.name}"
 }
 
 resource "aws_db_subnet_group" "default" {
@@ -374,6 +399,10 @@ resource "aws_db_instance" "db" {
   skip_final_snapshot = "true" # To remove
 }
 
+# Beanstalk application
+resource "aws_elastic_beanstalk_application" "beanstalk_app" {
+  name = "${var.app_name}"
+}
 
 resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
   name = "rails-aws-starter-sandbox"
