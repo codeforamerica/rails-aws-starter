@@ -34,3 +34,13 @@ variable "rails_secret_key_base" {
 }
 
 variable "rds_password" {}
+
+variable "app_name" {
+  description = "Name for the application. Primarily used for prefixing."
+  default = "rails-aws-starter"
+}
+
+variable "app_env" {
+  description = "Application environment (e.g. staging, demo, production)"
+  default = "sandbox"
+}

@@ -422,5 +422,206 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
     name = "DATABASE_URL"
     value = "postgresql://${aws_db_instance.db.username}:${var.rds_password}@${aws_db_instance.db.endpoint}/${aws_db_instance.db.name}"
   }
+//
+//  setting {
+//    namespace = "aws:elasticbeanstalk:cloudwatch:logs"
+//    name = "StreamLogs"
+//    value = "true"
+//  }
 
+  setting {
+    namespace = "aws:elasticbeanstalk:cloudwatch:logs"
+    name = "DeleteOnTerminate"
+    value = "false"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:cloudwatch:logs"
+    name = "RetentionInDays"
+    value = "3653"
+  }
+}
+
+resource "aws_iam_role" "cloudwatch_logs_role" {
+  name = "cloudwatch_logs_role"
+
+  assume_role_policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "cloudtrail.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+POLICY
+}
+
+resource "aws_iam_role_policy_attachment" "cloudwatch_s3_attach" {
+  role = "${aws_iam_role.cloudwatch_logs_role.name}"
+  policy_arn = "${aws_iam_policy.cloudwatch_s3_policy.arn}"
+}
+
+resource "aws_iam_policy" "cloudwatch_s3_policy" {
+  name = "cloudwatch_s3"
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AWSCloudTrailCreateAndUpdateS3LogStream",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": [
+        "${aws_cloudwatch_log_group.log_access_logs.arn}:*",
+        "${aws_cloudwatch_log_group.management_logs.arn}:*"
+      ]
+    }
+  ]
+}
+POLICY
+}
+
+resource "aws_cloudtrail" "log_access_logs" {
+  name = "log-access-logs-${var.app_name}-${var.app_env}"
+  s3_bucket_name = "${aws_s3_bucket.cloudtrail_log_access_logs.id}"
+  include_global_service_events = false
+  enable_log_file_validation = true
+
+  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.log_access_logs.arn}"
+  cloud_watch_logs_role_arn = "${aws_iam_role.cloudwatch_logs_role.arn}"
+
+  event_selector {
+    read_write_type = "All"
+    include_management_events = false
+
+    data_resource {
+      type = "AWS::S3::Object"
+      values = [
+        "${aws_s3_bucket.cloudtrail_management_logs.arn}/"
+      ]
+    }
+  }
+}
+
+resource "aws_cloudtrail" "management_logs" {
+  name = "management-logs-${var.app_name}-${var.app_env}"
+  s3_bucket_name = "${aws_s3_bucket.cloudtrail_management_logs.id}"
+  include_global_service_events = true
+  enable_log_file_validation = true
+
+  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.management_logs.arn}"
+  cloud_watch_logs_role_arn = "${aws_iam_role.cloudwatch_logs_role.arn}"
+}
+
+resource "aws_s3_bucket" "cloudtrail_log_access_logs" {
+  bucket = "cloudtrail-log-access-logs-${var.app_name}-${var.app_env}"
+  policy = <<POLICY
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AWSCloudTrailAclCheck",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "cloudtrail.amazonaws.com"
+            },
+            "Action": "s3:GetBucketAcl",
+            "Resource": "arn:aws:s3:::cloudtrail-log-access-logs-${var.app_name}-${var.app_env}"
+        },
+        {
+            "Sid": "AWSCloudTrailWrite",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "cloudtrail.amazonaws.com"
+            },
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::cloudtrail-log-access-logs-${var.app_name}-${var.app_env}/*",
+            "Condition": {
+                "StringEquals": {
+                    "s3:x-amz-acl": "bucket-owner-full-control"
+                }
+            }
+        },
+        {
+            "Sid": "DenyUnSecureCommunications",
+            "Effect": "Deny",
+            "Principal": {
+              "AWS": "*"
+            },
+            "Action": "s3:*",
+            "Resource": "arn:aws:s3:::cloudtrail-log-access-logs-${var.app_name}-${var.app_env}/*",
+            "Condition": {
+                "Bool": {
+                    "aws:SecureTransport": "false"
+                }
+            }
+        }
+    ]
+}
+POLICY
+}
+
+resource "aws_s3_bucket" "cloudtrail_management_logs" {
+  bucket = "cloudtrail-management-logs-${var.app_name}-${var.app_env}"
+  policy = <<POLICY
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AWSCloudTrailAclCheck",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "cloudtrail.amazonaws.com"
+            },
+            "Action": "s3:GetBucketAcl",
+            "Resource": "arn:aws:s3:::cloudtrail-management-logs-${var.app_name}-${var.app_env}"
+        },
+        {
+            "Sid": "AWSCloudTrailWrite",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "cloudtrail.amazonaws.com"
+            },
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::cloudtrail-management-logs-${var.app_name}-${var.app_env}/*",
+            "Condition": {
+                "StringEquals": {
+                    "s3:x-amz-acl": "bucket-owner-full-control"
+                }
+            }
+        },
+        {
+            "Sid": "DenyUnSecureCommunications",
+            "Effect": "Deny",
+            "Principal": {
+                "AWS": "*"
+            },
+            "Action": "s3:*",
+            "Resource": "arn:aws:s3:::cloudtrail-management-logs-${var.app_name}-${var.app_env}/*",
+            "Condition": {
+                "Bool": {
+                    "aws:SecureTransport": "false"
+                }
+            }
+        }
+    ]
+}
+POLICY
+}
+
+resource "aws_cloudwatch_log_group" "log_access_logs" {
+  name = "log_access_logs"
+}
+
+resource "aws_cloudwatch_log_group" "management_logs" {
+  name = "management_logs"
 }
