@@ -65,6 +65,16 @@ resource "aws_network_acl" "default" {
     to_port = 0
   }
 
+  # SSH
+  ingress {
+    protocol = "tcp"
+    rule_no = 100
+    action = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port = 22
+    to_port = 22
+  }
+
   # Ephemeral ports for response packets
   ingress {
     protocol = "tcp"
@@ -168,6 +178,16 @@ resource "aws_network_acl" "private" {
     to_port = 0
   }
 
+  # SSH
+  ingress {
+    protocol = "tcp"
+    rule_no = 100
+    action = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port = 22
+    to_port = 22
+  }
+
   # Ephemeral ports for response packets
   ingress {
     protocol = "tcp"
@@ -217,9 +237,43 @@ resource "aws_key_pair" "auth" {
   public_key = "${var.public_key}"
 }
 
+resource "aws_security_group" "bastion_security" {
+  name = "bastion_security"
+  vpc_id = "${aws_vpc.default.id}"
+
+  # SSH access from CfA
+  ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [
+      "69.12.169.82/32"
+    ]
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+  }
+}
+
 resource "aws_security_group" "application_security" {
   name = "application_security"
   vpc_id = "${aws_vpc.default.id}"
+
+  # SSH access from the VPC
+  ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [
+      "${aws_vpc.default.cidr_block}"
+    ]
+  }
 
   # HTTP access from the VPC
   ingress {
@@ -270,6 +324,31 @@ resource "aws_security_group" "rds_security" {
       "0.0.0.0/0"
     ]
   }
+}
+
+resource "aws_instance" "bastion" {
+  # The connection block tells our provisioner how to
+  # communicate with the resource (instance)
+  connection {
+    # The default username for our AMI
+    user = "ec2_user"
+
+    # The connection will use the local SSH agent for authentication.
+  }
+
+  tags {
+    Name = "bastion"
+  }
+
+  instance_type = "t2.micro"
+  # Amazon Linux AMI 2018.03.a x86_64 ECS HVM GP2 in us-east-1
+  ami = "ami-fbc1c684"
+  key_name = "${aws_key_pair.auth.id}"
+  vpc_security_group_ids = [
+    "${aws_security_group.bastion_security.id}"
+  ]
+  subnet_id = "${aws_subnet.public.id}"
+  associate_public_ip_address = true
 }
 
 # Beanstalk application
