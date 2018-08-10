@@ -208,16 +208,6 @@ resource "aws_network_acl" "private" {
     to_port = 80
   }
 
-  # HTTPS
-  ingress {
-    protocol = "tcp"
-    rule_no = 400
-    action = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port = 443
-    to_port = 443
-  }
-
   tags {
     Name = "private"
   }
