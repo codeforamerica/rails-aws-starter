@@ -65,16 +65,6 @@ resource "aws_network_acl" "default" {
     to_port = 0
   }
 
-  # SSH
-  ingress {
-    protocol = "tcp"
-    rule_no = 100
-    action = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port = 22
-    to_port = 22
-  }
-
   # Ephemeral ports for response packets
   ingress {
     protocol = "tcp"
@@ -178,16 +168,6 @@ resource "aws_network_acl" "private" {
     to_port = 0
   }
 
-  # SSH
-  ingress {
-    protocol = "tcp"
-    rule_no = 100
-    action = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port = 22
-    to_port = 22
-  }
-
   # Ephemeral ports for response packets
   ingress {
     protocol = "tcp"
@@ -237,44 +217,9 @@ resource "aws_key_pair" "auth" {
   public_key = "${var.public_key}"
 }
 
-resource "aws_security_group" "bastion_security" {
-  name = "bastion_security"
-  vpc_id = "${aws_vpc.default.id}"
-
-  # SSH access from select locations
-  ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = [
-      "69.12.169.82/32", # CfA
-      "73.106.63.169/32" # Luigi
-    ]
-  }
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = [
-      "0.0.0.0/0"
-    ]
-  }
-}
-
 resource "aws_security_group" "application_security" {
   name = "application_security"
   vpc_id = "${aws_vpc.default.id}"
-
-  # SSH from the VPC
-  ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = [
-      "${aws_vpc.default.cidr_block}"
-    ]
-  }
 
   # HTTP access from the VPC
   ingress {
@@ -327,121 +272,13 @@ resource "aws_security_group" "rds_security" {
   }
 }
 
-resource "aws_instance" "bastion" {
-  # The connection block tells our provisioner how to
-  # communicate with the resource (instance)
-  connection {
-    # The default username for our AMI
-    user = "ec2-user"
-
-    # The connection will use the local SSH agent for authentication.
-  }
-
-  tags {
-    Name = "bastion"
-  }
-
-  instance_type = "t2.micro"
-  # Amazon Linux AMI 2018.03.a x86_64 ECS HVM GP2 in us-east-1
-  ami = "ami-fbc1c684"
-  # Key will be used to SSH to bastion for setting up user accounts
-  key_name = "${aws_key_pair.auth.id}"
-  vpc_security_group_ids = [
-    "${aws_security_group.bastion_security.id}"
-  ]
-  subnet_id = "${aws_subnet.public.id}"
-  associate_public_ip_address = true
-  iam_instance_profile = "${aws_iam_instance_profile.bastion_profile.name}"
-
-  # Run security updates after creating instance
-  provisioner "remote-exec" {
-    inline = [ "sudo yum -y update --security" ]
-  }
-}
-
-resource "aws_iam_role" "bastion_role" {
-  name = "bastion_role"
-  force_detach_policies = "true"
-
-  assume_role_policy = <<EOF
-{
-  "Version": "2008-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "ec2.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-EOF
-}
-
-resource "aws_iam_instance_profile" "bastion_profile" {
-  name = "bastion_profile"
-  role = "${aws_iam_role.bastion_role.name}"
-}
-
-
 # Beanstalk application
 resource "aws_elastic_beanstalk_application" "beanstalk_app" {
   name = "rails-aws-starter"
 }
 
-resource "aws_iam_role" "instance_role" {
-  name = "instance_role"
-  force_detach_policies = "true"
-
-  assume_role_policy = <<EOF
-{
-  "Version": "2008-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "ec2.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-EOF
-}
-
-resource "aws_iam_role" "beanstalk_role" {
-  name = "beanstalk_role"
-  force_detach_policies = "true"
-
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "elasticbeanstalk.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole",
-      "Condition": {
-        "StringEquals": {
-          "sts:ExternalId": "elasticbeanstalk"
-        }
-      }
-    }
-  ]
-}
-EOF
-}
-
-resource "aws_iam_instance_profile" "instance_profile" {
-  name = "instance_profile"
-  role = "${aws_iam_role.instance_role.name}"
-}
-
-resource "aws_db_subnet_group" "rds" {
-  name = "rds"
+resource "aws_db_subnet_group" "default" {
+  name = "main"
   subnet_ids = [
     "${aws_subnet.private.id}",
     "${aws_subnet.private_2.id}"
@@ -455,7 +292,7 @@ resource "aws_db_subnet_group" "rds" {
 resource "aws_db_instance" "db" {
   allocated_storage = 10
   availability_zone = "${var.aws_az1}"
-  db_subnet_group_name = "${aws_db_subnet_group.rds.name}"
+  db_subnet_group_name = "${aws_db_subnet_group.default.name}"
   engine = "postgres"
   instance_class = "db.m3.medium"
   kms_key_id = "${aws_kms_key.k.arn}"
@@ -479,14 +316,6 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
     namespace = "aws:autoscaling:launchconfiguration"
     name = "InstanceType"
     value = "t2.small"
-  }
-
-  setting {
-    namespace = "aws:autoscaling:launchconfiguration"
-    name = "ImageId"
-
-    # Amazon Linux AMI 2018.03.a x86_64 ECS HVM GP2 in us-east-1
-    value = "ami-fbc1c684"
   }
 
   setting {
