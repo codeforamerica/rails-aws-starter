@@ -16,7 +16,7 @@ Currently a work-in-progress.
 
 1. Create a new key pair locally (`ssh-keygen -t rsa -b 4096 -C "your_email@example.com"`). Safely store the keyfiles, and run `chmod 400 my-key-pair` on the private key so that only you can read it. Add the generated public key (e.g. `my-key-pair.pub`) to the varfile as `public_key`.
 
-1. Run [terraform](./deploy/README.md) to create the deployment environment (default name is `rails-aws-starter-sandbox`).
+1. [Initialize the terraform backend and apply the initial configuration](./deploy/README.md) (default name is `rails-aws-starter-sandbox`).
 
 1. Upon initial creation, enable access to the Bastion instance for each user that requires SSH access:
     

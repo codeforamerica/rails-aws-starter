@@ -218,7 +218,7 @@ resource "aws_kms_key" "k" {
 }
 
 resource "aws_kms_alias" "k" {
-  name = "alias/rails_aws_starter"
+  name = "alias/rails-aws-starter"
   target_key_id = "${aws_kms_key.k.key_id}"
 }
 
@@ -339,7 +339,7 @@ resource "aws_instance" "bastion" {
   ]
   subnet_id = "${aws_subnet.public.id}"
   associate_public_ip_address = true
-  iam_instance_profile = "${aws_iam_instance_profile.bastion_profile.name}"
+  iam_instance_profile = "${aws_iam_instance_profile.bastion_instance_profile.name}"
 }
 
 resource "aws_iam_role" "bastion_role" {
@@ -366,9 +366,14 @@ resource "aws_iam_role_policy_attachment" "bastion_logs_to_cloudwatch" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
 }
 
-resource "aws_iam_instance_profile" "bastion_profile" {
-  name = "bastion_profile"
+resource "aws_iam_instance_profile" "bastion_instance_profile" {
+  name = "bastion_instance_profile"
   role = "${aws_iam_role.bastion_role.name}"
+}
+
+resource "aws_iam_instance_profile" "application_instance_profile" {
+  name = "application_instance_profile"
+  role = "${aws_iam_role.instance_role.name}"
 }
 
 resource "aws_db_subnet_group" "default" {
@@ -404,8 +409,66 @@ resource "aws_elastic_beanstalk_application" "beanstalk_app" {
   name = "${var.app_name}"
 }
 
+resource "aws_iam_role" "instance_role" {
+  name = "instance_role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2008-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role" "beanstalk_role" {
+  name = "beanstalk_role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "elasticbeanstalk.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": {
+          "sts:ExternalId": "elasticbeanstalk"
+        }
+      }
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "eb_enhanced_health" {
+  role = "${aws_iam_role.beanstalk_role.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth"
+}
+
+resource "aws_iam_role_policy_attachment" "eb_service" {
+  role = "${aws_iam_role.beanstalk_role.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkService"
+}
+
+resource "aws_iam_role_policy_attachment" "web_tier" {
+  role = "${aws_iam_role.instance_role.name}"
+  policy_arn = "arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier"
+}
+
 resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
-  name = "rails-aws-starter-sandbox"
+  name = "${var.app_name}-${var.app_env}"
   application = "${aws_elastic_beanstalk_application.beanstalk_app.name}"
   solution_stack_name = "64bit Amazon Linux 2018.03 v2.8.1 running Ruby 2.5 (Puma)"
 
@@ -418,8 +481,20 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
 
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
+    name = "IamInstanceProfile"
+    value = "${aws_iam_instance_profile.application_instance_profile.name}"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
     name = "SecurityGroups"
     value = "${aws_security_group.application_security.id}"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:environment"
+    name = "ServiceRole"
+    value = "${aws_iam_role.beanstalk_role.name}"
   }
 
   setting {
@@ -438,6 +513,12 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
     namespace = "aws:ec2:vpc"
     name = "ELBSubnets"
     value = "${aws_subnet.public.id}"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:healthreporting:system"
+    name = "SystemType"
+    value = "enhanced"
   }
 
   setting {
