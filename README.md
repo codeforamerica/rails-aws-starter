@@ -30,6 +30,18 @@ Currently a work-in-progress.
 
 1. Deploy the application by running `eb deploy rails-aws-starter-sandbox`.
 
+
+### First deploy (all environments, with promotion pipeline)
+
+Our CircleCI config details three environments: staging, promotion, and production. To create these environments for use with CircleCI, you can use the script and steps detailed above—you'll just have to do the following for each environment:
+
+1. Create a separate AWS account (e.g. using `rails-aws-starter+staging@codeforamerica.org`, `rails-aws-starter+demo@codeforamerica.org`, `rails-aws-starter+production@codeforamerica.org`)
+
+1. Complete the [first deploy] steps for each environment
+
+Once the deployment environments are all in place, update the CircleCI config as detailed below, and trigger a build.
+
+
 ### CircleCI
 
 We use CircleCI to run tests and deploy to our various environments, by running the following tasks:
