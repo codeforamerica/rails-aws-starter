@@ -537,12 +537,12 @@ resource "aws_elastic_beanstalk_environment" "beanstalk_env" {
     name = "DATABASE_URL"
     value = "postgresql://${aws_db_instance.db.username}:${var.rds_password}@${aws_db_instance.db.endpoint}/${aws_db_instance.db.name}"
   }
-//
-//  setting {
-//    namespace = "aws:elasticbeanstalk:cloudwatch:logs"
-//    name = "StreamLogs"
-//    value = "true"
-//  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:cloudwatch:logs"
+    name = "StreamLogs"
+    value = "true"
+  }
 
   setting {
     namespace = "aws:elasticbeanstalk:cloudwatch:logs"
