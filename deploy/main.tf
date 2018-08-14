@@ -371,6 +371,11 @@ resource "aws_iam_instance_profile" "bastion_instance_profile" {
   role = "${aws_iam_role.bastion_role.name}"
 }
 
+resource "aws_iam_role_policy_attachment" "application_logs_to_cloudwatch" {
+  role = "${aws_iam_role.instance_role.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
 resource "aws_iam_instance_profile" "application_instance_profile" {
   name = "application_instance_profile"
   role = "${aws_iam_role.instance_role.name}"
