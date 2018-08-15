@@ -406,6 +406,7 @@ resource "aws_db_instance" "db" {
   storage_encrypted = true
   storage_type = "gp2"
   vpc_security_group_ids = ["${aws_security_group.rds_security.id}"]
+  backup_retention_period = 35
   skip_final_snapshot = "true" # To remove
 }
 
